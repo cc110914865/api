@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接入方调用情况统计</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 24px;
+        }
+
+        /* 顶部关闭栏 */
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+        .close-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+            border-radius: 50%;
+        }
+        .close-btn:hover { color: #333; background: #f0f0f0; }
+        .page-wrap { position: relative; }
+
+        /* 查询栏 */
+        .query-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .query-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .query-item label {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .query-item select {
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 8px;
+            font-size: 14px;
+            color: #333;
+            background: #fff;
+            cursor: pointer;
+            outline: none;
+            min-width: 120px;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 28px;
+        }
+        .query-item select:hover { border-color: #7B8CDE; }
+        .date-range { display: flex; align-items: center; gap: 8px; }
+        .date-picker {
+            height: 32px;
+            padding: 0 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .date-picker:hover, .date-picker:focus { border-color: #7B8CDE; }
+        .date-separator { color: #999; }
+        .hint { font-size: 13px; color: #999; margin-left: 4px; }
+        .required::before { content: '*'; color: #f5222d; margin-right: 4px; }
+        .chart-toggle { display: none; }
+
+        /* 页签 */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e8e8e8;
+            margin-bottom: 20px;
+            gap: 0;
+        }
+        .tab {
+            padding: 10px 24px;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            white-space: nowrap;
+        }
+        .tab:hover { color: #5B6EDE; }
+        .tab.active { color: #5B6EDE; border-bottom-color: #5B6EDE; font-weight: 500; }
+
+        /* 次级查询条件 */
+        .sub-filter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .sub-filter label { font-size: 14px; color: #333; font-weight: 500; }
+        .sub-filter select {
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 8px;
+            font-size: 14px;
+            color: #333;
+            background: #fff;
+            cursor: pointer;
+            outline: none;
+            min-width: 120px;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 28px;
+        }
+
+        /* 表格 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .data-table thead th {
+            background: linear-gradient(135deg, #8B9DDA 0%, #7B8CDE 50%, #9B8BDE 100%);
+            color: #fff;
+            font-weight: 500;
+            text-align: center;
+            padding: 12px 16px;
+            white-space: nowrap;
+        }
+        .data-table thead th .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            margin-left: 6px;
+            vertical-align: middle;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .data-table thead th .sort-icon:hover { opacity: 1; }
+        .data-table thead th .sort-icon svg { width: 8px; height: 8px; fill: currentColor; }
+        .data-table tbody tr { background: #fff; }
+        .data-table tbody tr:nth-child(even) { background: #F4F6FD; }
+        .data-table tbody tr:hover { background: #E8ECFA; }
+        /* 前三个页签行可点击 */
+        #tab-call .data-table tbody tr,
+        #tab-submit .data-table tbody tr,
+        #tab-success .data-table tbody tr,
+        #tab-miss .data-table tbody tr { cursor: pointer; }
+        .data-table tbody td {
+            padding: 12px 16px;
+            text-align: center;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .data-table tbody td.status-ok { color: #52c41a; font-weight: 500; }
+        .data-table tbody td.status-err { color: #f5222d; font-weight: 500; }
+
+        /* 面板显隐 */
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+    </style>
+</head>
+<body>
+<div class="container">
+<div class="page-wrap">
+    <div class="top-bar">
+        <div class="close-btn" onclick="history.back()" title="关闭">✕</div>
+    </div>
+
+    <!-- 顶部查询栏 -->
+    <div class="query-bar">
+        <div class="query-item">
+            <label>企业税号</label>
+            <select><option>无限制</option></select>
+        </div>
+        <div class="query-item">
+            <label>所属地区</label>
+            <select><option>无限制</option></select>
+        </div>
+        <div class="query-item">
+            <label class="required">对接方</label>
+            <select id="partner-select"><option id="partner-val"></option></select>
+        </div>
+        <div class="query-item">
+            <label class="required">查询时间</label>
+            <div class="date-range">
+                <input type="month" class="date-picker" id="time-start-input" value="2026-07">
+                <span class="date-separator">-</span>
+                <input type="month" class="date-picker" id="time-end-input" value="2026-07">
+            </div>
+            <span class="hint">（不可跨年）</span>
+        </div>
+    </div>
+
+    <!-- 页签导航 -->
+    <div class="tabs">
+        <div class="tab active" data-tab="tab-call">调用通道</div>
+        <div class="tab" data-tab="tab-submit">申报提交</div>
+        <div class="tab" data-tab="tab-success">申报成功</div>
+        <div class="tab" data-tab="tab-miss">漏报税查询</div>
+    </div>
+
+    <!-- ① 调用通道 -->
+    <div class="tab-panel active" id="tab-call">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>企业税号 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>所属地区 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>最后请求时间 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>调用次数 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>记录数 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>88220419XX01ABCD1Q</td><td>浙江</td><td>2026-07-21 10:43:17</td><td>14</td><td>1</td></tr>
+                <tr><td>88330512XX02EFGH2R</td><td>江苏</td><td>2026-07-21 10:41:52</td><td>27</td><td>1</td></tr>
+                <tr><td>88440601XX03IJKL3S</td><td>广东</td><td>2026-07-21 10:40:38</td><td>6</td><td>1</td></tr>
+                <tr><td>88510701XX04MNOP4T</td><td>四川</td><td>2026-07-21 10:38:05</td><td>19</td><td>1</td></tr>
+                <tr><td>88310105XX05QRST5U</td><td>上海</td><td>2026-07-21 10:36:44</td><td>31</td><td>1</td></tr>
+                <tr><td>88420801XX06UVWX6V</td><td>湖北</td><td>2026-07-21 10:35:11</td><td>8</td><td>1</td></tr>
+                <tr><td>88530901XX07YZAB7W</td><td>云南</td><td>2026-07-21 10:33:29</td><td>23</td><td>1</td></tr>
+                <tr><td>88611001XX08CDEF8X</td><td>陕西</td><td>2026-07-21 10:31:57</td><td>11</td><td>1</td></tr>
+                <tr><td>88371102XX09GHIJ9Y</td><td>山东</td><td>2026-07-21 10:30:03</td><td>5</td><td>1</td></tr>
+                <tr><td>88211201XX10KLMN0Z</td><td>辽宁</td><td>2026-07-21 10:28:41</td><td>17</td><td>1</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ② 申报提交 -->
+    <div class="tab-panel" id="tab-submit">
+        <div class="sub-filter">
+            <label>税种名称</label>
+            <select><option>无限制</option><option>财务报表</option><option>增值税小规模纳税人</option><option>企业所得税</option></select>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>企业税号 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>所属地区 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>税种名称 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>记录数 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>88220419XX01ABCD1Q</td><td>浙江</td><td>财务报表</td><td>1</td></tr>
+                <tr><td>88330512XX02EFGH2R</td><td>江苏</td><td>财务报表</td><td>1</td></tr>
+                <tr><td>88440601XX03IJKL3S</td><td>广东</td><td>增值税小规模纳税人</td><td>1</td></tr>
+                <tr><td>88510701XX04MNOP4T</td><td>四川</td><td>财务报表</td><td>1</td></tr>
+                <tr><td>88310105XX05QRST5U</td><td>上海</td><td>企业所得税</td><td>1</td></tr>
+                <tr><td>88420801XX06UVWX6V</td><td>湖北</td><td>财务报表</td><td>1</td></tr>
+                <tr><td>88530901XX07YZAB7W</td><td>云南</td><td>增值税小规模纳税人</td><td>1</td></tr>
+                <tr><td>88611001XX08CDEF8X</td><td>陕西</td><td>财务报表</td><td>1</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ③ 申报成功 -->
+    <div class="tab-panel" id="tab-success">
+        <div class="sub-filter">
+            <label>税种名称</label>
+            <select><option>无限制</option><option>财务报表</option><option>增值税小规模纳税人</option><option>企业所得税</option></select>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>企业税号 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>所属地区 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>税种名称 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>记录数 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>88220419XX01ABCD1Q</td><td>浙江</td><td>财务报表</td><td>1</td></tr>
+                <tr><td>88330512XX02EFGH2R</td><td>江苏</td><td>财务报表</td><td>1</td></tr>
+                <tr><td>88510701XX04MNOP4T</td><td>四川</td><td>财务报表</td><td>1</td></tr>
+                <tr><td>88310105XX05QRST5U</td><td>上海</td><td>企业所得税</td><td>1</td></tr>
+                <tr><td>88420801XX06UVWX6V</td><td>湖北</td><td>财务报表</td><td>1</td></tr>
+                <tr><td>88530901XX07YZAB7W</td><td>云南</td><td>增值税小规模纳税人</td><td>1</td></tr>
+                <tr><td>88611001XX08CDEF8X</td><td>陕西</td><td>财务报表</td><td>1</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ④ 漏报税查询 -->
+    <div class="tab-panel" id="tab-miss">
+        <div class="sub-filter">
+            <label>漏报税状态</label>
+            <select><option>无限制</option><option>无漏报税</option><option>漏报税异常</option></select>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>企业税号 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>所属期 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>漏报税状态 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>更新时间 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>记录数 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>88220419XX01ABCD1Q</td><td>2026-07</td><td class="status-ok">无漏报税</td><td>2026-07-21 10:42:15</td><td>1</td></tr>
+                <tr><td>88330512XX02EFGH2R</td><td>2026-07</td><td class="status-ok">无漏报税</td><td>2026-07-21 10:39:50</td><td>1</td></tr>
+                <tr><td>88440601XX03IJKL3S</td><td>2026-07</td><td class="status-err">漏报税异常</td><td>2026-07-21 10:37:33</td><td>1</td></tr>
+                <tr><td>88510701XX04MNOP4T</td><td>2026-07</td><td class="status-ok">无漏报税</td><td>2026-07-21 10:35:08</td><td>1</td></tr>
+                <tr><td>88310105XX05QRST5U</td><td>2026-07</td><td class="status-ok">无漏报税</td><td>2026-07-21 10:32:47</td><td>1</td></tr>
+                <tr><td>88420801XX06UVWX6V</td><td>2026-07</td><td class="status-err">漏报税异常</td><td>2026-07-21 10:30:12</td><td>1</td></tr>
+                <tr><td>88530901XX07YZAB7W</td><td>2026-07</td><td class="status-ok">无漏报税</td><td>2026-07-21 10:27:39</td><td>1</td></tr>
+                <tr><td>88611001XX08CDEF8X</td><td>2026-07</td><td class="status-ok">无漏报税</td><td>2026-07-21 10:25:04</td><td>1</td></tr>
+                <tr><td>88371102XX09GHIJ9Y</td><td>2026-07</td><td class="status-ok">无漏报税</td><td>2026-07-21 10:22:51</td><td>1</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div><!-- .page-wrap -->
+</div><!-- .container -->
+
+<script>
+    var drill = JSON.parse(sessionStorage.getItem('drill:detail') || '{}');
+    var partner   = drill.partner   || '无限制';
+    var timeStart = drill.timeStart || '2026年7月';
+    var timeEnd   = drill.timeEnd   || '2026年7月';
+
+    document.getElementById('partner-val').textContent = partner;
+
+    function toMonthValue(t) {
+        var m = t.match(/(\d{4})年(\d+)月/);
+        if (m) return m[1] + '-' + ('0' + m[2]).slice(-2);
+        return '2026-07';
+    }
+    document.getElementById('time-start-input').value = toMonthValue(timeStart);
+    document.getElementById('time-end-input').value   = toMonthValue(timeEnd);
+
+    // 页签切换
+    document.querySelectorAll('.tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+            document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+            this.classList.add('active');
+            document.getElementById(this.dataset.tab).classList.add('active');
+        });
+    });
+
+    // 前三个页签：点击行 → 接口调用详情查询
+    ['tab-call', 'tab-submit', 'tab-success'].forEach(function(panelId) {
+        document.querySelectorAll('#' + panelId + ' .data-table tbody tr').forEach(function(tr) {
+            tr.addEventListener('click', function() {
+                var taxno = this.cells[0].textContent.trim();
+                sessionStorage.setItem('drill:call-list', JSON.stringify({
+                    partner: partner,
+                    taxno: taxno,
+                    timeStart: timeStart,
+                    timeEnd: timeEnd
+                }));
+                window.location.href = 'call-list.html';
+            });
+        });
+    });
+
+    // 第四个页签（漏报税查询）：点击行 → 漏报税检查
+    document.querySelectorAll('#tab-miss .data-table tbody tr').forEach(function(tr) {
+        tr.addEventListener('click', function() {
+            var taxno  = this.cells[0].textContent.trim();
+            var period = this.cells[1].textContent.trim(); // 如 "2026-07"
+            sessionStorage.setItem('drill:tax-check', JSON.stringify({
+                taxno: taxno,
+                period: period
+            }));
+            window.location.href = 'tax-check.html';
+        });
+    });
+</script>
+</body>
+</html>

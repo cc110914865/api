@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漏报税检查</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 20px 24px 32px;
+        }
+
+        /* 顶部关闭栏 */
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+        }
+        .close-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+            border-radius: 50%;
+        }
+        .close-btn:hover { color: #333; background: #f0f0f0; }
+
+        /* 查询栏 */
+        .query-bar {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+        .query-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .query-item label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            white-space: nowrap;
+        }
+        .required::before { content: '*'; color: #f5222d; margin-right: 4px; }
+        .query-item input.txt {
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 10px;
+            font-size: 14px;
+            color: #333;
+            background: #fff;
+            outline: none;
+            width: 200px;
+            font-family: inherit;
+        }
+        .query-item input.txt:hover,
+        .query-item input.txt:focus { border-color: #7B8CDE; }
+
+        /* 年月选择控件 */
+        .ym-field {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 26px 0 10px;
+            background: #fff;
+            position: relative;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .ym-field:hover { border-color: #7B8CDE; }
+        .ym-field .ym-unit { color: #999; }
+        .ym-field::after {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            width: 0; height: 0;
+            margin-top: -2px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #bbb;
+        }
+        .hint { font-size: 13px; color: #999; }
+
+        /* 右上角工具图标 */
+        .query-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+        }
+        .tool-icon {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #666;
+        }
+        .tool-icon:hover { border-color: #7B8CDE; color: #7B8CDE; }
+        .tool-icon svg { width: 16px; height: 16px; fill: currentColor; }
+
+        /* 主体区：左侧图标栏 + 表格 */
+        .main-area {
+            display: flex;
+            gap: 0;
+        }
+
+        /* 左侧竖向图标栏 */
+        .side-icons {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 4px 6px 0 0;
+            flex-shrink: 0;
+        }
+        .side-icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #7B8CDE;
+            font-size: 15px;
+        }
+        .side-icon:hover { background: #E8ECFA; }
+        .side-icon svg { width: 16px; height: 16px; fill: currentColor; }
+
+        /* 表格 */
+        .data-table {
+            flex: 1;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .data-table thead th {
+            background: linear-gradient(135deg, #8B9DDA 0%, #7B8CDE 50%, #9B8BDE 100%);
+            color: #fff;
+            font-weight: 600;
+            text-align: center;
+            padding: 12px 14px;
+            white-space: nowrap;
+        }
+        .data-table thead th:first-child { text-align: left; }
+        .data-table thead th .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            margin-left: 5px;
+            vertical-align: middle;
+            cursor: pointer;
+            opacity: 0.75;
+        }
+        .data-table thead th .sort-icon:hover { opacity: 1; }
+        .data-table thead th .sort-icon svg { width: 8px; height: 8px; fill: currentColor; }
+        .data-table tbody tr { background: #fff; }
+        .data-table tbody tr:nth-child(even) { background: #F4F6FD; }
+        .data-table tbody tr:hover { background: #E8ECFA; }
+        .data-table tbody td {
+            padding: 12px 14px;
+            text-align: center;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .data-table tbody td:first-child { text-align: left; }
+        .data-table tbody td.status-ok  { color: #52c41a; font-weight: 500; }
+        .data-table tbody td.status-err { color: #f5222d; font-weight: 500; }
+        .num-right  { text-align: right !important; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- 关闭按钮 -->
+    <div class="top-bar">
+        <div class="close-btn" onclick="history.back()" title="关闭">✕</div>
+    </div>
+
+    <!-- 查询栏 -->
+    <div class="query-bar">
+        <div class="query-item">
+            <label class="required">企业税号</label>
+            <input class="txt" id="taxno-input" value="91530602673621063B">
+        </div>
+        <div class="query-item">
+            <label class="required">查询时间</label>
+            <span class="ym-field">
+                <span id="ym-y">2026</span><span class="ym-unit">年</span>
+                <span id="ym-m">7</span><span class="ym-unit">月</span>
+            </span>
+        </div>
+        <span class="hint">（最多查询近4月）</span>
+        <div class="query-right">
+            <div class="tool-icon" title="导出">
+                <svg viewBox="0 0 16 16"><rect x="1" y="1" width="4" height="4" rx="0.5"/><rect x="6" y="1" width="4" height="4" rx="0.5"/><rect x="11" y="1" width="4" height="4" rx="0.5"/><rect x="1" y="6" width="4" height="4" rx="0.5"/><rect x="6" y="6" width="4" height="4" rx="0.5"/><rect x="11" y="6" width="4" height="4" rx="0.5"/><rect x="1" y="11" width="4" height="4" rx="0.5"/><rect x="6" y="11" width="4" height="4" rx="0.5"/><rect x="11" y="11" width="4" height="4" rx="0.5"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主体 -->
+    <div class="main-area">
+
+        <!-- 左侧图标栏 -->
+        <div class="side-icons">
+            <div class="side-icon" title="设置">
+                <svg viewBox="0 0 16 16"><path d="M8 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm5.94-1.06a5.94 5.94 0 0 0 .06-.94 5.94 5.94 0 0 0-.06-.94l1.52-1.19a.4.4 0 0 0 .09-.49l-1.44-2.49a.4.4 0 0 0-.48-.17l-1.79.72a5.9 5.9 0 0 0-1.62-.94L9.8 1.4A.4.4 0 0 0 9.4 1H6.6a.4.4 0 0 0-.4.34l-.27 1.6a5.9 5.9 0 0 0-1.62.94L2.52 3.16a.4.4 0 0 0-.48.17L.6 5.82a.39.39 0 0 0 .09.49l1.52 1.19A5.94 5.94 0 0 0 2.15 8.5c0 .32.03.63.06.94L.69 10.63a.4.4 0 0 0-.09.49l1.44 2.49c.1.18.31.24.48.17l1.79-.72c.5.35 1.04.63 1.62.94l.27 1.6c.05.2.22.34.4.34h2.8c.18 0 .35-.14.4-.34l.27-1.6a5.9 5.9 0 0 0 1.62-.94l1.79.72c.17.07.38.01.48-.17l1.44-2.49a.39.39 0 0 0-.09-.49L13.94 9.44z"/></svg>
+            </div>
+            <div class="side-icon" title="图表">
+                <svg viewBox="0 0 16 16"><rect x="1" y="8" width="3" height="7" rx="0.5"/><rect x="5" y="5" width="3" height="10" rx="0.5"/><rect x="9" y="2" width="3" height="13" rx="0.5"/><rect x="13" y="6" width="3" height="9" rx="0.5"/></svg>
+            </div>
+            <div class="side-icon" title="记录">
+                <svg viewBox="0 0 16 16"><rect x="2" y="1" width="12" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="5" y1="5" x2="11" y2="5" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="5" y1="11" x2="9" y2="11" stroke="currentColor" stroke-width="1.2"/></svg>
+            </div>
+            <div class="side-icon" title="检查">
+                <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.3"/><polyline points="5,8.5 7,10.5 11,6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+        </div>
+
+        <!-- 数据表格 -->
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>申报表 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>申报状态 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>缴款状态 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>申报期限 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>纳税申报日期 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>税款所属期起 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>税款所属期止 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                    <th>应补退税额 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>居民企业（查账征收）企业所得税月（季）度申报</td>
+                    <td class="status-ok">已申报</td>
+                    <td class="status-ok">无需缴款</td>
+                    <td>2026-07-15</td>
+                    <td>2026-07-11</td>
+                    <td>2026-04-01</td>
+                    <td>2026-06-30</td>
+                    <td class="num-right">0</td>
+                </tr>
+                <tr>
+                    <td>财务报表报送（季报）</td>
+                    <td class="status-ok">已申报</td>
+                    <td class="status-ok">无需缴款</td>
+                    <td>2026-07-15</td>
+                    <td>2026-07-11</td>
+                    <td>2026-04-01</td>
+                    <td>2026-06-30</td>
+                    <td class="num-right">0</td>
+                </tr>
+                <tr>
+                    <td>财产和行为税税源采集及合并申报</td>
+                    <td class="status-ok">已申报</td>
+                    <td class="status-ok">已缴款</td>
+                    <td>2026-07-15</td>
+                    <td>2026-07-11</td>
+                    <td>2026-01-01</td>
+                    <td>2026-06-30</td>
+                    <td class="num-right">1380.00</td>
+                </tr>
+                <tr>
+                    <td>增值税及附加税费申报（一般纳税人适用）</td>
+                    <td class="status-ok">已申报</td>
+                    <td class="status-ok">已缴款</td>
+                    <td>2026-07-15</td>
+                    <td>2026-07-11</td>
+                    <td>2026-06-01</td>
+                    <td>2026-06-30</td>
+                    <td class="num-right">8750.40</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div><!-- .main-area -->
+</div>
+
+<script>
+    var drill  = JSON.parse(sessionStorage.getItem('drill:tax-check') || '{}');
+    var taxno  = drill.taxno;
+    var period = drill.period; // 格式 "2026-07"
+
+    if (taxno)  document.getElementById('taxno-input').value = taxno;
+    if (period) {
+        var m = period.match(/(\d{4})-(\d{2})/);
+        if (m) {
+            document.getElementById('ym-y').textContent = m[1];
+            document.getElementById('ym-m').textContent = String(parseInt(m[2]));
+        }
+    }
+</script>
+</body>
+</html>

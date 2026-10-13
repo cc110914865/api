@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接口调用详情查询</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 24px;
+        }
+
+        /* 顶部关闭栏 */
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+        }
+        .close-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+            border-radius: 50%;
+        }
+        .close-btn:hover { color: #333; background: #f0f0f0; }
+
+        /* 查询栏（两行栅格） */
+        .query-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px 28px;
+            margin-bottom: 8px;
+        }
+        .query-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .query-item > label {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+            white-space: nowrap;
+            min-width: 64px;
+            text-align: right;
+        }
+        .query-item select,
+        .query-item input.txt {
+            flex: 1;
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 8px;
+            font-size: 14px;
+            color: #333;
+            background: #fff;
+            outline: none;
+            min-width: 0;
+            font-family: inherit;
+        }
+        .query-item select {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 28px;
+        }
+        .query-item select:hover,
+        .query-item input.txt:hover { border-color: #7B8CDE; }
+        .required::before { content: '*'; color: #f5222d; margin-right: 4px; }
+
+        /* 年月选择 */
+        .ym-range {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ym-field {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 26px 0 10px;
+            background: #fff;
+            position: relative;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .ym-field:hover { border-color: #7B8CDE; }
+        .ym-field .ym-num { color: #333; }
+        .ym-field .ym-unit { color: #999; }
+        .ym-field::after {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            width: 0; height: 0;
+            margin-top: -2px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #bbb;
+        }
+        .ym-sep { color: #999; }
+        .hint-row {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 18px;
+        }
+        .hint {
+            font-size: 13px;
+            color: #999;
+            /* 对齐到请求时间列（第4列） */
+            grid-column: 4;
+            padding-left: 74px;
+        }
+        .hint-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0 28px;
+            margin-bottom: 18px;
+        }
+
+        /* 表格 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .data-table thead th {
+            background: linear-gradient(135deg, #8B9DDA 0%, #7B8CDE 50%, #9B8BDE 100%);
+            color: #fff;
+            font-weight: 600;
+            text-align: center;
+            padding: 13px 16px;
+            white-space: nowrap;
+        }
+        .data-table thead th .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            margin-left: 6px;
+            vertical-align: middle;
+            cursor: pointer;
+            opacity: 0.75;
+        }
+        .data-table thead th .sort-icon:hover { opacity: 1; }
+        .data-table thead th .sort-icon svg { width: 8px; height: 8px; fill: currentColor; }
+        .data-table tbody tr { background: #fff; cursor: pointer; }
+        .data-table tbody tr:nth-child(even) { background: #F4F6FD; }
+        .data-table tbody tr:hover { background: #E8ECFA; }
+        .data-table tbody td {
+            padding: 13px 16px;
+            text-align: center;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .data-table tbody td.status-ok { color: #52c41a; font-weight: 500; }
+        .data-table tbody td.status-err { color: #f5222d; font-weight: 500; }
+        .data-table tbody td.status-warn { color: #fa8c16; font-weight: 500; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="top-bar">
+        <div class="close-btn" onclick="history.back()" title="关闭">✕</div>
+    </div>
+
+    <!-- 查询栏 第一行 -->
+    <div class="query-grid">
+        <div class="query-item">
+            <label class="required">企业税号</label>
+            <input class="txt" id="taxno-input" value="91370321MA94XKKC7E">
+        </div>
+        <div class="query-item">
+            <label>所属地区</label>
+            <select><option>无限制</option><option>浙江</option><option>江苏</option><option>广东</option><option>山东</option></select>
+        </div>
+        <div class="query-item">
+            <label class="required">对接方</label>
+            <select id="partner-select"><option id="partner-opt">无限制</option></select>
+        </div>
+        <div class="query-item">
+            <label class="required">请求时间</label>
+            <div class="ym-range">
+                <span class="ym-field"><span class="ym-num" id="ys">2026</span><span class="ym-unit">年</span><span class="ym-num" id="ms">7</span><span class="ym-unit">月</span></span>
+                <span class="ym-sep">-</span>
+                <span class="ym-field"><span class="ym-num" id="ye">2026</span><span class="ym-unit">年</span><span class="ym-num" id="me">7</span><span class="ym-unit">月</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查询栏 第二行 -->
+    <div class="hint-grid">
+        <div class="query-item">
+            <label>接口名称</label>
+            <select><option>无限制</option><option>查询我的标签</option><option>查询未缴税费</option><option>财报申报</option><option>增值税申报</option></select>
+        </div>
+        <div class="query-item">
+            <label>接口地址</label>
+            <select><option>无限制</option><option>/etaxdeclare/sfjn/wjsf</option><option>/etaxdeclare/query/tag</option></select>
+        </div>
+        <div class="query-item">
+            <label>调用结果</label>
+            <select><option>无限制</option><option>成功</option><option>成功（业务报错）</option><option>失败</option></select>
+        </div>
+        <div class="hint">（最多查询近4月）</div>
+    </div>
+
+    <!-- 明细表 -->
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>接口分类 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                <th>接口名称 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                <th>对接方 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                <th>请求时间 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                <th>请求耗时(ms) <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+                <th>调用结果 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></th>
+            </tr>
+        </thead>
+        <tbody id="detail-tbody">
+            <tr data-name="查询我的标签"   data-addr="/etaxdeclare/query/tag"   data-time="2026-07-21 11:07:18" data-cost="8118" data-result="成功"        data-rescls="status-ok"   data-code="0000">
+                <td>申报信息查询</td><td>查询我的标签</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-21 11:07:18</td><td>8118</td><td class="status-ok">成功</td></tr>
+            <tr data-name="查询我的标签"   data-addr="/etaxdeclare/query/tag"   data-time="2026-07-21 10:09:28" data-cost="446"  data-result="成功"        data-rescls="status-ok"   data-code="0000">
+                <td>申报信息查询</td><td>查询我的标签</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-21 10:09:28</td><td>446</td><td class="status-ok">成功</td></tr>
+            <tr data-name="查询我的标签"   data-addr="/etaxdeclare/query/tag"   data-time="2026-07-21 10:09:27" data-cost="9845" data-result="成功"        data-rescls="status-ok"   data-code="0000">
+                <td>申报信息查询</td><td>查询我的标签</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-21 10:09:27</td><td>9845</td><td class="status-ok">成功</td></tr>
+            <tr data-name="查询未缴税费"   data-addr="/mockapi/declare/queryUnpaid"   data-time="2026-07-14 17:53:15" data-cost="461"  data-result="成功（业务报错）" data-rescls="status-warn" data-code="1010">
+                <td>申报信息查询</td><td>查询未缴税费</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-14 17:53:15</td><td>461</td><td class="status-warn">成功（业务报错）</td></tr>
+            <tr data-name="查询我的标签"   data-addr="/etaxdeclare/query/tag"   data-time="2026-07-17 15:12:13" data-cost="8693" data-result="成功"        data-rescls="status-ok"   data-code="0000">
+                <td>申报信息查询</td><td>查询我的标签</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-17 15:12:13</td><td>8693</td><td class="status-ok">成功</td></tr>
+            <tr data-name="查询我的标签"   data-addr="/etaxdeclare/query/tag"   data-time="2026-07-17 10:02:35" data-cost="4840" data-result="成功"        data-rescls="status-ok"   data-code="0000">
+                <td>申报信息查询</td><td>查询我的标签</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-17 10:02:35</td><td>4840</td><td class="status-ok">成功</td></tr>
+            <tr data-name="查询我的标签"   data-addr="/etaxdeclare/query/tag"   data-time="2026-07-17 09:12:28" data-cost="3946" data-result="成功"        data-rescls="status-ok"   data-code="0000">
+                <td>申报信息查询</td><td>查询我的标签</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-17 09:12:28</td><td>3946</td><td class="status-ok">成功</td></tr>
+            <tr data-name="财报申报"       data-addr="/etaxdeclare/cwbb/submit" data-time="2026-07-15 14:33:02" data-cost="12874" data-result="失败"        data-rescls="status-err"  data-code="1008">
+                <td>申报提交</td><td>财报申报</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-15 14:33:02</td><td>12874</td><td class="status-err">失败</td></tr>
+            <tr data-name="查询我的标签"   data-addr="/etaxdeclare/query/tag"   data-time="2026-07-14 08:09:47" data-cost="3585" data-result="成功"        data-rescls="status-ok"   data-code="0000">
+                <td>申报信息查询</td><td>查询我的标签</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-14 08:09:47</td><td>3585</td><td class="status-ok">成功</td></tr>
+            <tr data-name="增值税申报"     data-addr="/etaxdeclare/zzs/submit"  data-time="2026-07-12 16:21:40" data-cost="7120" data-result="成功"        data-rescls="status-ok"   data-code="0000">
+                <td>申报提交</td><td>增值税申报</td><td class="partner-cell">爱信诺易账-同步（DJZ00001）</td><td>2026-07-12 16:21:40</td><td>7120</td><td class="status-ok">成功</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    var drill = JSON.parse(sessionStorage.getItem('drill:call-list') || '{}');
+    var partner = drill.partner || '爱信诺易账-同步（DJZ00001）';
+    var taxno   = drill.taxno;
+    if (taxno) document.getElementById('taxno-input').value = taxno;
+    document.getElementById('partner-opt').textContent = partner;
+
+    // 列表内「对接方」列同步为上一页传入的对接方
+    document.querySelectorAll('#detail-tbody .partner-cell').forEach(function(td) {
+        td.textContent = partner;
+    });
+
+    // 点击明细行 → 调用详情
+    document.querySelectorAll('#detail-tbody tr').forEach(function(tr) {
+        tr.addEventListener('click', function() {
+            sessionStorage.setItem('drill:call-detail', JSON.stringify({
+                partner: partner,
+                taxno:   document.getElementById('taxno-input').value,
+                name:    this.dataset.name,
+                addr:    this.dataset.addr,
+                time:    this.dataset.time,
+                cost:    this.dataset.cost,
+                result:  this.dataset.result,
+                code:    this.dataset.code
+            }));
+            window.location.href = 'call-detail.html';
+        });
+    });
+</script>
+</body>
+</html>

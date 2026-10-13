@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调用详情</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 24px 28px 32px;
+            position: relative;
+        }
+
+        /* 标题 + 关闭 */
+        .head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .close-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+            border-radius: 50%;
+        }
+        .close-btn:hover { color: #333; background: #f0f0f0; }
+
+        /* 信息卡片栅格 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+        .info-card {
+            border: 1px solid #e6e8ef;
+            border-radius: 6px;
+            padding: 16px 18px 22px;
+            background: #fff;
+        }
+        .info-card .card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .info-card .card-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        .info-card .card-icon {
+            color: #b7bccb;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .info-card .card-icon:hover { color: #7B8CDE; }
+        .info-card .card-value {
+            text-align: center;
+            font-size: 16px;
+            color: #333;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+        .info-card .card-value.warn { color: #fa8c16; }
+        .info-card .card-value.ok { color: #52c41a; }
+        .info-card .card-value.err { color: #f5222d; }
+
+        /* 参数区块 */
+        .param-block { margin-bottom: 20px; }
+        .param-title {
+            background: linear-gradient(135deg, #8B9DDA 0%, #7B8CDE 55%, #9B8BDE 100%);
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 10px 16px;
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .param-title .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            cursor: pointer;
+            opacity: 0.85;
+        }
+        .param-title .sort-icon svg { width: 8px; height: 8px; fill: currentColor; }
+        .param-body {
+            border: 1px solid #e6e8ef;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            padding: 14px 16px;
+            font-family: "Consolas", "Courier New", monospace;
+            font-size: 13.5px;
+            color: #333;
+            line-height: 1.6;
+            background: #fff;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .param-body.wrap { white-space: pre-wrap; word-break: break-all; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="head">
+        <div class="title">调用详情</div>
+        <div class="close-btn" onclick="history.back()" title="关闭">✕</div>
+    </div>
+
+    <!-- 第一行卡片 -->
+    <div class="card-grid">
+        <div class="info-card">
+            <div class="card-head"><span class="card-label">接口名称</span><span class="card-icon">⇅</span></div>
+            <div class="card-value" id="c-name">查询未缴税费</div>
+        </div>
+        <div class="info-card">
+            <div class="card-head"><span class="card-label">接口地址</span><span class="card-icon">⇅</span></div>
+            <div class="card-value" id="c-addr">/mockapi/declare/queryUnpaid</div>
+        </div>
+        <div class="info-card">
+            <div class="card-head"><span class="card-label">对接方</span><span class="card-icon">⇅</span></div>
+            <div class="card-value" id="c-partner">爱信诺易账-同步（DJZ00001）</div>
+        </div>
+        <div class="info-card">
+            <div class="card-head"><span class="card-label">请求标识</span><span class="card-icon">⇅</span></div>
+            <div class="card-value" id="c-reqid">a1b2c3d4e5f60718,0192abcd3456ef78</div>
+        </div>
+    </div>
+
+    <!-- 第二行卡片 -->
+    <div class="card-grid">
+        <div class="info-card">
+            <div class="card-head"><span class="card-label">请求时间</span><span class="card-icon">⇅</span></div>
+            <div class="card-value" id="c-time">2026-07-14 17:53:15</div>
+        </div>
+        <div class="info-card">
+            <div class="card-head"><span class="card-label">请求耗时(ms)</span><span class="card-icon">⇅</span></div>
+            <div class="card-value" id="c-cost">461</div>
+        </div>
+        <div class="info-card">
+            <div class="card-head"><span class="card-label">调用结果</span><span class="card-icon">⇅</span></div>
+            <div class="card-value warn" id="c-result">成功（业务报错）</div>
+        </div>
+        <div class="info-card">
+            <div class="card-head"><span class="card-label">返代码</span><span class="card-icon">⇅</span></div>
+            <div class="card-value" id="c-code">1010</div>
+        </div>
+    </div>
+
+    <!-- 请求参数 -->
+    <div class="param-block">
+        <div class="param-title">请求参数 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></div>
+        <div class="param-body" id="c-req">{"shxydm":"91110400MAE912QX76","username":"18612340000","dqmc":"beijing","proxy":"10.10.10.10:30000","env":false,"types":"","gatewayPlatformCode":"DJZ00001","orderServiceBz":""}</div>
+    </div>
+
+    <!-- 响应参数 -->
+    <div class="param-block">
+        <div class="param-title">响应参数 <span class="sort-icon"><svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg><svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg></span></div>
+        <div class="param-body" id="c-res">{"code":1010,"message":"申报-该查询条件数据为空","data":null}</div>
+    </div>
+</div>
+
+<script>
+    var drill = JSON.parse(sessionStorage.getItem('drill:call-detail') || '{}');
+    var params = { get: function(k){ return (drill[k] !== undefined && drill[k] !== null) ? String(drill[k]) : null; } };
+    function set(id, key) {
+        var v = params.get(key);
+        if (v !== null && v !== '') document.getElementById(id).textContent = v;
+    }
+    set('c-name',    'name');
+    set('c-addr',    'addr');
+    set('c-partner', 'partner');
+    set('c-time',    'time');
+    set('c-cost',    'cost');
+    set('c-code',    'code');
+
+    // 调用结果着色
+    var result = params.get('result');
+    if (result) {
+        var el = document.getElementById('c-result');
+        el.textContent = result;
+        el.className = 'card-value';
+        if (result.indexOf('失败') >= 0) el.classList.add('err');
+        else if (result.indexOf('业务报错') >= 0) el.classList.add('warn');
+        else el.classList.add('ok');
+    }
+
+    // 依据接口地址与税号联动请求参数（示意）
+    var taxno = params.get('taxno');
+    var addr  = params.get('addr');
+    if (taxno) {
+        var req = {
+            shxydm: taxno,
+            username: "18612340000",
+            dqmc: "beijing",
+            proxy: "10.10.10.10:30000",
+            env: false,
+            types: "",
+            gatewayPlatformCode: (params.get('partner') || '').match(/（(.+?)）/) ? params.get('partner').match(/（(.+?)）/)[1] : "DJZ00001",
+            orderServiceBz: ""
+        };
+        document.getElementById('c-req').textContent = JSON.stringify(req);
+    }
+    // 依据返代码联动响应参数
+    var code = params.get('code');
+    if (code && code !== '1010') {
+        var msg = code === '0000' ? '操作成功' : (code === '1008' ? '申报-提交失败' : '业务处理异常');
+        var data = code === '0000' ? '{"result":"ok"}' : 'null';
+        document.getElementById('c-res').textContent = '{"code":' + code + ',"message":"' + msg + '","data":' + data + '}';
+    }
+</script>
+</body>
+</html>

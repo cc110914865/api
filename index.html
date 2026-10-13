@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>申报通道数据报表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 24px;
+        }
+        .query-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .query-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .query-item label {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .query-item select {
+            height: 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            padding: 0 8px;
+            font-size: 14px;
+            color: #333;
+            background: #fff;
+            cursor: pointer;
+            outline: none;
+            min-width: 120px;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 28px;
+        }
+        .query-item select:hover { border-color: #7B8CDE; }
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .date-picker {
+            height: 32px;
+            padding: 0 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .date-picker:hover, .date-picker:focus { border-color: #7B8CDE; }
+        .date-separator {
+            color: #999;
+            font-size: 14px;
+        }
+        .hint {
+            font-size: 13px;
+            color: #999;
+            margin-left: 4px;
+        }
+        .required::before {
+            content: '*';
+            color: #f5222d;
+            margin-right: 4px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .data-table thead th {
+            background: linear-gradient(135deg, #8B9DDA 0%, #7B8CDE 50%, #9B8BDE 100%);
+            color: #fff;
+            font-weight: 500;
+            text-align: center;
+            padding: 12px 16px;
+            white-space: nowrap;
+            position: relative;
+        }
+        .data-table thead th:first-child {
+            text-align: left;
+            padding-left: 24px;
+        }
+        .data-table thead th .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            margin-left: 6px;
+            vertical-align: middle;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .data-table thead th .sort-icon:hover {
+            opacity: 1;
+        }
+        .data-table thead th .sort-icon svg {
+            width: 8px;
+            height: 8px;
+            fill: currentColor;
+        }
+        .data-table tbody tr {
+            background: #fff;
+        }
+        .data-table tbody tr:nth-child(even) {
+            background: #F4F6FD;
+        }
+        .data-table tbody tr:hover {
+            background: #E8ECFA;
+            cursor: pointer;
+        }
+        .data-table tbody td {
+            padding: 12px 16px;
+            text-align: center;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .data-table tbody td:first-child {
+            text-align: left;
+            padding-left: 24px;
+        }
+        .data-table tbody td.indent {
+            padding-left: 48px;
+        }
+        .data-table tbody td .name {
+            color: #333;
+        }
+        .data-table tbody td .code {
+            color: #666;
+            margin-left: 4px;
+        }
+        .number {
+            font-variant-numeric: tabular-nums;
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="query-bar">
+            <div class="query-item">
+                <label>对接方</label>
+                <select id="sel-partner">
+                    <option>无限制</option>
+                    <option>智税互联-智能通道（ZSTHZN01）</option>
+                    <option>东方财税科技（DFCS8801）</option>
+                    <option>北极星记账（BJXJ6601）</option>
+                    <option>百川企业服务（BCQY3301）</option>
+                    <option>腾飞财税云（TFCY5501）</option>
+                    <option>远景数据（YJSJ1101）</option>
+                    <option>极光智能（JGZN7701）</option>
+                </select>
+            </div>
+            <div class="query-item">
+                <label>所属地区</label>
+                <select>
+                    <option>无限制</option>
+                </select>
+            </div>
+            <div class="query-item">
+                <label class="required">查询时间</label>
+                <div class="date-range">
+                    <input type="month" class="date-picker" value="2026-07">
+                    <span class="date-separator">-</span>
+                    <input type="month" class="date-picker" value="2026-07">
+                </div>
+                <span class="hint">（不可跨年）</span>
+            </div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>
+                        对接方
+                        <span class="sort-icon">
+                            <svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg>
+                            <svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg>
+                        </span>
+                    </th>
+                    <th>
+                        调用通道户数
+                        <span class="sort-icon">
+                            <svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg>
+                            <svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg>
+                        </span>
+                    </th>
+                    <th>
+                        申报提交户数
+                        <span class="sort-icon">
+                            <svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg>
+                            <svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg>
+                        </span>
+                    </th>
+                    <th>
+                        申报成功户数
+                        <span class="sort-icon">
+                            <svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg>
+                            <svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg>
+                        </span>
+                    </th>
+                    <th>
+                        无漏报税户数
+                        <span class="sort-icon">
+                            <svg viewBox="0 0 12 6"><path d="M6 0L0 6h12z"/></svg>
+                            <svg viewBox="0 0 12 6"><path d="M6 6L0 0h12z"/></svg>
+                        </span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="main-tbody">
+                <tr data-partner="智税互联-智能通道（ZSTHZN01）">
+                    <td><span class="name">智税互联-智能通道</span><span class="code">（ZSTHZN01）</span></td>
+                    <td class="number">53,271</td>
+                    <td class="number">21,430</td>
+                    <td class="number">21,108</td>
+                    <td class="number">31,841</td>
+                </tr>
+                <tr data-partner="东方财税科技（DFCS8801）">
+                    <td><span class="name">东方财税科技</span><span class="code">（DFCS8801）</span></td>
+                    <td class="number">18,640</td>
+                    <td class="number">0</td>
+                    <td class="number">0</td>
+                    <td class="number">18,640</td>
+                </tr>
+                <tr data-partner="北极星记账（BJXJ6601）">
+                    <td><span class="name">北极星记账</span><span class="code">（BJXJ6601）</span></td>
+                    <td class="number">42,085</td>
+                    <td class="number">33,760</td>
+                    <td class="number">33,218</td>
+                    <td class="number">8,325</td>
+                </tr>
+                <tr data-partner="百川企业服务（BCQY3301）">
+                    <td><span class="name">百川企业服务</span><span class="code">（BCQY3301）</span></td>
+                    <td class="number">31,509</td>
+                    <td class="number">19,840</td>
+                    <td class="number">19,573</td>
+                    <td class="number">11,669</td>
+                </tr>
+                <tr data-partner="腾飞财税云（TFCY5501）">
+                    <td><span class="name">腾飞财税云</span><span class="code">（TFCY5501）</span></td>
+                    <td class="number">60,347</td>
+                    <td class="number">52,190</td>
+                    <td class="number">51,624</td>
+                    <td class="number">8,157</td>
+                </tr>
+                <tr data-partner="远景数据（YJSJ1101）">
+                    <td><span class="name">远景数据</span><span class="code">（YJSJ1101）</span></td>
+                    <td class="number">10,823</td>
+                    <td class="number">4,370</td>
+                    <td class="number">4,201</td>
+                    <td class="number">6,453</td>
+                </tr>
+                <tr data-partner="极光智能（JGZN7701）">
+                    <td><span class="name">极光智能</span><span class="code">（JGZN7701）</span></td>
+                    <td class="number">37</td>
+                    <td class="number">12</td>
+                    <td class="number">9</td>
+                    <td class="number">25</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        document.querySelectorAll('#main-tbody tr').forEach(function(tr) {
+            tr.addEventListener('click', function() {
+                var partner = this.dataset.partner;
+                sessionStorage.setItem('drill:detail', JSON.stringify({
+                    partner: partner,
+                    timeStart: '2026年7月',
+                    timeEnd: '2026年7月'
+                }));
+                window.location.href = 'detail.html';
+            });
+        });
+    </script>
+</body>
+</html>
